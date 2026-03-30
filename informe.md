@@ -12,7 +12,7 @@ A partir del enunciado original, se identifican 10 ambigüedades principales:
 4. **No se define si se aceptan reservas en el pasado**.
 5. **No se define si se permiten reservas superpuestas por técnico**.
 6. **No hay reglas de cancelación** (quién cancela, hasta cuándo, condiciones).
-7. **“Reservas futuras” no está acotado** (desde cuándo, orden, filtros).
+7. **Criterios de consulta de reservas no definidos** (qué estados incluir, desde cuándo, orden y filtros).
 8. **No se define autenticación/autorización** para usuarios del sistema.
 9. **No se aclara si hay integración con email/WhatsApp** o solo carga manual.
 10. **“Simple, usable y confiable” no tiene criterios medibles**.
@@ -46,7 +46,7 @@ La solución corresponde a una primera versión operativa para uso administrativ
 4. **No se permiten reservas en el pasado:** la fecha y hora de la reserva debe ser posterior a la fecha/hora actual del servidor.
 5. **No se permiten solapamientos:** un técnico no puede tener dos reservas simultáneas (misma fecha y hora).
 6. **Cancelación de reserva:** una reserva puede ser cancelada registrando el motivo de cancelación; una vez cancelada no puede reactivarse.
-7. **Consulta de reservas futuras:** devuelve todas las reservas con fecha/hora posterior o igual a la actual, ordenadas ascendentemente por fecha y hora.
+7. **Consulta de reservas futuras:** devuelve reservas no canceladas con fecha/hora posterior o igual a la actual, ordenadas ascendentemente por fecha y hora.
 8. **Mensajes de error claros:** toda operación fallida debe mostrar un mensaje comprensible al usuario (ej.: "El técnico no está disponible en esa fecha").
 
 ### 1.4 Elementos fuera de alcance
@@ -72,7 +72,7 @@ La solución corresponde a una primera versión operativa para uso administrativ
 1. **Prueba de validación de datos de entrada**
    - Verificar que un cliente no se registre sin nombre, teléfono o email válido.
    - Verificar que el sistema rechace un teléfono con caracteres no numéricos.
-   - Verificar que un email sea validado contra formato RFC básico.
+   - Verificar que un email sea validado contra formato básico.
    - **Por qué es verificación:** comprueba que el código cumple la regla de negocio definida (datos obligatorios).
 
 2. **Prueba de superposición de horarios**
@@ -92,7 +92,7 @@ La solución corresponde a una primera versión operativa para uso administrativ
    - Crear un escenario donde se simula una mañana de operación (5-10 reservas) y verificar que el flujo es usable.
    - **Por qué es validación:** determina si los datos y el flujo reflejan la realidad operativa de la empresa.
 
-2. **Prueba de usabilidad: tiempo de consulta de reservas futuras**
+2. **Prueba de usabilidad: tiempo de consulta de reservas futuras no canceladas**
    - Un operario de la empresa debe poder listar todas las reservas del próximo mes en menos de 2 segundos.
    - **Por qué es validación:** valida si el sistema es "usable" en el sentido práctico (velocidad aceptable para el negocio).
 
@@ -140,22 +140,22 @@ La solución corresponde a una primera versión operativa para uso administrativ
 
 ---
 
-### Decisión 3: Definición de "reservas futuras"
+### Decisión 3: Criterios de consulta de reservas futuras
 
-**Ambigüedad detectada:** "Reservas futuras" no está acotado; no se sabe desde cuándo se consulta (sección 1.1.7).
+**Ambigüedad detectada:** No se define con precisión qué reservas se muestran en la consulta (estados incluidos, límite temporal y orden) (sección 1.1.7).
 
 **Alternativas consideradas:**
-- Reservas estrictamente futuras (fecha/hora > ahora).
-- Reservas desde hoy en adelante (fecha/hora >= ahora, considerando solo la fecha).
-- Reservas desde la próxima hora redonda (ej.: 10:00).
+- Mostrar todas las reservas, incluyendo canceladas.
+- Mostrar solo reservas no canceladas con fecha/hora >= ahora.
+- Mostrar reservas por estado configurable (pendiente/cancelada) con filtros manuales.
 
-**Decisión tomada:** Reservas con fecha/hora >= fecha/hora actual del servidor (precisión por segundo).
+**Decisión tomada:** Mostrar solo reservas no canceladas con fecha/hora >= fecha/hora actual del servidor, ordenadas ascendentemente.
 
-**Justificación:** Permite incluir la reserva de hoy si está a futuro en el día; útil operativamente (ver qué queda por atender hoy). Precisión por segundo evita ambigüedad de límites.
+**Justificación:** La empresa necesita ver trabajo pendiente real; incluir canceladas genera ruido operativo. El límite temporal por fecha/hora actual permite ver lo que aún falta por atender hoy y días siguientes.
 
-**Impacto en implementación:** Query con filtro `WHERE fecha_hora >= NOW()` ordenado ASC por fecha_hora.
+**Impacto en implementación:** Query con filtros `WHERE estado != 'cancelada' AND fecha_hora >= NOW()` ordenado ASC por fecha_hora.
 
-**Impacto en pruebas:** Casos para reservas de hoy (antes/después de now), mañana, mes próximo; validar orden.
+**Impacto en pruebas:** Casos para reservas canceladas (no deben aparecer), reservas de hoy (antes/después de now), mañana y mes próximo; validar orden.
 
 ---
 
