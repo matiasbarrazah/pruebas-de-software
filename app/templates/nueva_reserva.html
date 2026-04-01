@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Nueva reserva · ServiTécnico{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Nueva reserva</h1>
+    <div class="subtitle">Complete todos los campos para agendar una atención</div>
+  </div>
+</div>
+
+<div style="max-width:560px;">
+  <div class="card">
+    <div class="card-header"><h2>Datos de la reserva</h2></div>
+    <form method="POST">
+      <div class="form-body">
+
+        <div class="form-group">
+          <label for="cliente_id">Cliente</label>
+          <select id="cliente_id" name="cliente_id" required>
+            <option value="">— Seleccionar cliente —</option>
+            {% for c in clientes %}
+            <option value="{{ c.id }}">{{ c.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="tecnico_id">Técnico</label>
+          <select id="tecnico_id" name="tecnico_id" required>
+            <option value="">— Seleccionar técnico —</option>
+            {% for t in tecnicos %}
+            <option value="{{ t.id }}">{{ t.nombre }} — {{ t.especialidad }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="fecha_hora">Fecha y hora de atención</label>
+          <input type="datetime-local" id="fecha_hora" name="fecha_hora" required />
+        </div>
+
+        <div class="form-group">
+          <label for="direccion">Dirección de atención</label>
+          <input type="text" id="direccion" name="direccion" placeholder="Ej: Av. Providencia 1234, Santiago" required />
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion">Descripción del problema</label>
+          <textarea id="descripcion" name="descripcion" rows="3"
+            placeholder="Ej: Refrigerador no enfría, hace ruido al arrancar..." required></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">Crear reserva</button>
+          <a href="{{ url_for('index') }}" class="btn-cancel-link">Cancelar</a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

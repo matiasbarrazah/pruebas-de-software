@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Reservas · ServiTécnico{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Panel de reservas</h1>
+    <div class="subtitle">Reservas futuras pendientes de atención</div>
+  </div>
+  <a href="{{ url_for('nueva_reserva') }}" class="btn-primary">＋ Nueva reserva</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon orange">📋</div>
+    <div class="stat-info">
+      <div class="value">{{ reservas | length }}</div>
+      <div class="label">Reservas pendientes</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue">👤</div>
+    <div class="stat-info">
+      <div class="value">{{ total_clientes }}</div>
+      <div class="label">Clientes registrados</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green">🔧</div>
+    <div class="stat-info">
+      <div class="value">{{ total_tecnicos }}</div>
+      <div class="label">Técnicos activos</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple">✓</div>
+    <div class="stat-info">
+      <div class="value">{{ total_canceladas }}</div>
+      <div class="label">Canceladas (total)</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2>Próximas atenciones</h2>
+    <span style="font-size:0.8rem;color:var(--muted);">Ordenadas por fecha ascendente</span>
+  </div>
+  <div class="table-wrap">
+    {% if reservas %}
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Fecha y hora</th>
+          <th>Cliente</th>
+          <th>Técnico</th>
+          <th>Especialidad</th>
+          <th>Dirección</th>
+          <th>Problema</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reservas %}
+        <tr>
+          <td style="color:var(--muted);font-size:0.8rem;">#{{ r.id }}</td>
+          <td style="white-space:nowrap;font-weight:600;">{{ r.fecha_hora.replace("T"," ") }}</td>
+          <td>{{ r.cliente }}</td>
+          <td>{{ r.tecnico }}</td>
+          <td><span style="font-size:0.8rem;color:var(--muted);">{{ r.especialidad }}</span></td>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ r.direccion }}">{{ r.direccion }}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ r.descripcion }}">{{ r.descripcion }}</td>
+          <td><span class="badge badge-pending">Pendiente</span></td>
+          <td>
+            <a href="{{ url_for('cancelar_reserva', reserva_id=r.id) }}" class="btn-danger">✕ Cancelar</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <p>No hay reservas futuras pendientes.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Técnicos · ServiTécnico{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Técnicos</h1>
+    <div class="subtitle">{{ tecnicos | length }} técnico{% if tecnicos | length != 1 %}s{% endif %} registrado{% if tecnicos | length != 1 %}s{% endif %}</div>
+  </div>
+</div>
+
+<div class="split-layout">
+
+  <div class="card">
+    <div class="card-header"><h2>Registrar técnico</h2></div>
+    <form method="POST">
+      <div class="form-body">
+        <div class="form-group">
+          <label for="nombre">Nombre completo</label>
+          <input type="text" id="nombre" name="nombre" placeholder="Ej: Carlos Ramírez" required />
+        </div>
+        <div class="form-group">
+          <label for="especialidad">Especialidad</label>
+          <input type="text" id="especialidad" name="especialidad" placeholder="Ej: refrigeración, lavadoras, hornos" required />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">Registrar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>Listado de técnicos</h2></div>
+    <div class="table-wrap">
+      {% if tecnicos %}
+      <table>
+        <thead>
+          <tr><th>#</th><th>Nombre</th><th>Especialidad</th></tr>
+        </thead>
+        <tbody>
+          {% for t in tecnicos %}
+          <tr>
+            <td style="color:var(--muted);font-size:0.8rem;">#{{ t.id }}</td>
+            <td style="font-weight:500;">{{ t.nombre }}</td>
+            <td><span class="badge badge-pending">{{ t.especialidad }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">🔧</div>
+        <p>No hay técnicos registrados aún.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Clientes · ServiTécnico{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Clientes</h1>
+    <div class="subtitle">{{ clientes | length }} cliente{% if clientes | length != 1 %}s{% endif %} registrado{% if clientes | length != 1 %}s{% endif %}</div>
+  </div>
+</div>
+
+<div class="split-layout">
+
+  <div class="card">
+    <div class="card-header"><h2>Registrar cliente</h2></div>
+    <form method="POST">
+      <div class="form-body">
+        <div class="form-group">
+          <label for="nombre">Nombre completo</label>
+          <input type="text" id="nombre" name="nombre" placeholder="Ej: María González" required />
+        </div>
+        <div class="form-group">
+          <label for="telefono">Teléfono</label>
+          <input type="text" id="telefono" name="telefono" placeholder="+56 9 1234 5678" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Correo electrónico</label>
+          <input type="email" id="email" name="email" placeholder="correo@ejemplo.cl" required />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-submit">Registrar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>Listado de clientes</h2></div>
+    <div class="table-wrap">
+      {% if clientes %}
+      <table>
+        <thead>
+          <tr><th>#</th><th>Nombre</th><th>Teléfono</th><th>Email</th></tr>
+        </thead>
+        <tbody>
+          {% for c in clientes %}
+          <tr>
+            <td style="color:var(--muted);font-size:0.8rem;">#{{ c.id }}</td>
+            <td style="font-weight:500;">{{ c.nombre }}</td>
+            <td>{{ c.telefono }}</td>
+            <td style="color:var(--muted);">{{ c.email }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">👤</div>
+        <p>No hay clientes registrados aún.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

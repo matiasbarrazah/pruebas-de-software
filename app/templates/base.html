@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Servicio Técnico{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+<header>
+  <a class="brand" href="{{ url_for('index') }}">
+    <div class="brand-icon">🔧</div>
+    ServiTécnico
+  </a>
+  <div class="divider-v"></div>
+  <nav>
+    <a href="{{ url_for('index') }}"      {% if request.endpoint == 'index' %}class="active"{% endif %}>Reservas</a>
+    <a href="{{ url_for('clientes') }}"   {% if request.endpoint == 'clientes' %}class="active"{% endif %}>Clientes</a>
+    <a href="{{ url_for('tecnicos') }}"   {% if request.endpoint == 'tecnicos' %}class="active"{% endif %}>Técnicos</a>
+  </nav>
+  <div class="header-actions">
+    <a href="{{ url_for('nueva_reserva') }}" class="btn-primary">＋ Nueva reserva</a>
+  </div>
+</header>
+
+<main>
+  <div class="alerts">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+        <div class="alert {{ category }}">
+          <span class="alert-icon">{% if category == 'success' %}✓{% else %}✕{% endif %}</span>
+          {{ msg }}
+        </div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer>
+  ServiTécnico &mdash; Sistema de Reservas de Atención Técnica &nbsp;·&nbsp; v1.0
+</footer>
+
+</body>
+</html>

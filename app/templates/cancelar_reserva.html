@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Cancelar reserva · ServiTécnico{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1>Cancelar reserva</h1>
+    <div class="subtitle">Confirme la cancelación de la atención agendada</div>
+  </div>
+</div>
+
+<div style="max-width:560px;display:flex;flex-direction:column;gap:1rem;">
+
+  <div class="card">
+    <div class="card-header">
+      <h2>Detalle de la reserva <span style="color:var(--muted);font-weight:400;">#{{ reserva.id }}</span></h2>
+      <span class="badge badge-pending">Pendiente</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="key">Cliente</div>
+        <div class="val">{{ reserva.cliente }}</div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Técnico</div>
+        <div class="val">{{ reserva.tecnico }}</div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Fecha y hora</div>
+        <div class="val" style="font-weight:600;">{{ reserva.fecha_hora.replace("T"," ") }}</div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Dirección</div>
+        <div class="val">{{ reserva.direccion }}</div>
+      </div>
+      <div class="detail-item" style="grid-column:1/-1;">
+        <div class="key">Descripción del problema</div>
+        <div class="val">{{ reserva.descripcion }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>Confirmar cancelación</h2></div>
+    <form method="POST">
+      <div class="form-body">
+        <div class="form-group">
+          <label for="motivo">Motivo de cancelación <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+          <textarea id="motivo" name="motivo" rows="2"
+            placeholder="Ej: Cliente canceló, técnico no disponible..."></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-danger-full">✕ Confirmar cancelación</button>
+          <a href="{{ url_for('index') }}" class="btn-cancel-link">Volver</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+{% endblock %}
