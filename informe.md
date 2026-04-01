@@ -194,3 +194,200 @@ La solución corresponde a una primera versión operativa para uso administrativ
 **Impacto en implementación:** No hay tablas de usuarios; la app asume acceso controlado por red/firewall corporativo.
 
 **Impacto en pruebas:** No hay casos de login/logout; las pruebas asumen acceso directo a funcionalidades.
+
+## 5. Estrategia, diseño y ejecución de pruebas
+
+### 5.1 Objetivos de prueba
+
+- Verificar que cada funcionalidad del sistema opera correctamente según las reglas de negocio definidas en la sección 1.3.
+- Detectar fallos en validaciones de entrada, restricciones de negocio y manejo de errores.
+- Confirmar que el sistema responde de forma controlada ante entradas límite, inválidas y situaciones de uso anómalas.
+
+### 5.2 Alcance de pruebas
+
+**Incluido:**
+- Registro de clientes con validación de campos obligatorios (nombre, teléfono, email).
+- Registro de técnicos con validación de campos obligatorios.
+- Creación de reservas con restricciones de fecha futura y no solapamiento de horario por técnico.
+- Cancelación de reservas (con y sin motivo).
+- Consulta y orden de reservas futuras no canceladas.
+- Comportamiento del sistema ante IDs inexistentes y operaciones duplicadas.
+
+**Excluido:**
+- Autenticación/login (fuera de alcance por decisión de diseño 5).
+- Integración con servicios externos (email, WhatsApp).
+- Pruebas de rendimiento o carga.
+- Pruebas de interfaz de usuario (navegador automatizado).
+
+### 5.3 Criterios de entrada y salida
+
+**Criterios de entrada:**
+- Base de datos inicializada con esquema correcto (`init_db()`).
+- Al menos un cliente y un técnico registrados (precondición de tests de reservas).
+- Aplicación Flask arrancada en modo testing.
+
+**Criterios de salida:**
+- 100% de los casos de prueba obligatorios ejecutados.
+- 0 fallos en casos funcionales, negativos y de borde.
+- Todos los casos disruptivos manejados sin crash ni corrupción de BD.
+
+### 5.4 Estrategia de pruebas
+
+Las pruebas son **automatizadas unitarias de integración** usando `unittest` y el cliente de pruebas de Flask (`app.test_client()`). Cada prueba realiza peticiones HTTP reales contra la aplicación con una base de datos SQLite en archivo temporal, verificando el comportamiento real de extremo a extremo (formulario → lógica → BD).
+
+No se usan mocks de la base de datos: cada test opera sobre SQLite real para que las restricciones de integridad referencial y las queries sean ejercitadas de verdad.
+
+El script de pruebas se ubica en `tests/test_suite.py` y puede ejecutarse con:
+
+```bash
+python -X utf8 tests/test_suite.py
+```
+
+### 5.5 Casos de prueba
+
+#### 5.5.1 Casos funcionales
+
+| ID | Nombre | Precondición | Pasos | Resultado esperado | Resultado obtenido |
+|---|---|---|---|---|---|
+| CP-F01 | Registrar cliente con datos válidos | Sin cliente con ese email | POST /clientes con nombre, teléfono y email válidos | Flash "registrado correctamente" | PASS |
+| CP-F02 | Registrar técnico con datos válidos | Sin técnico previo | POST /tecnicos con nombre y especialidad | Flash "registrado correctamente" | PASS |
+| CP-F03 | Crear reserva con fecha futura | Cliente y técnico registrados | POST /reservas/nueva con todos los campos, fecha 2099-06-15 10:00 | Redirect a index con flash de éxito | PASS |
+| CP-F04 | Reservas futuras ordenadas ASC por fecha | Dos reservas futuras en fechas distintas | GET / y verificar orden en HTML | La fecha más próxima aparece primero | PASS |
+| CP-F05 | Cancelar reserva con motivo | Reserva en estado pendiente | POST /reservas/{id}/cancelar con motivo | estado=cancelada y motivo guardado en BD | PASS |
+| CP-F06 | Cancelar reserva sin motivo | Reserva en estado pendiente | POST /reservas/{id}/cancelar con motivo vacío | estado=cancelada, motivo_cancelacion=NULL en BD | PASS |
+| CP-F07 | Reserva cancelada no aparece en listado | Reserva en estado pendiente | Cancelar y luego GET / | Descripción de la reserva ausente del HTML | PASS |
+| CP-F08 | Dos técnicos distintos, misma hora | Técnicos distintos libres a esa hora | Crear dos reservas con técnicos distintos y misma fecha/hora | Ambas reservas se crean exitosamente | PASS |
+
+#### 5.5.2 Casos de borde
+
+| ID | Nombre | Precondición | Pasos | Resultado esperado | Resultado obtenido |
+|---|---|---|---|---|---|
+| CP-B01 | Email con '+' es válido | Sin cliente con ese email | POST /clientes con email='test+tag@dominio.cl' | Cliente registrado sin error | PASS |
+| CP-B02 | Nombre con tildes y ñ | Sin cliente con ese email | POST /clientes con nombre con caracteres especiales | Cliente registrado sin error | PASS |
+| CP-B03 | Teléfono formato internacional | Sin cliente con ese email | POST /clientes con teléfono='+56 9 1234 5678' | Cliente registrado sin error | PASS |
+| CP-B04 | Descripción de 500 caracteres | Cliente y técnico registrados | POST /reservas/nueva con descripción de 500 chars | Reserva creada sin truncamiento ni error | PASS |
+| CP-B05 | Reusar hora de reserva cancelada | Técnico con reserva cancelada a esa hora | Crear nueva reserva para el mismo técnico en la misma hora | El sistema acepta la reserva (la hora quedó libre) | PASS |
+
+#### 5.5.3 Casos negativos
+
+| ID | Nombre | Precondición | Pasos | Resultado esperado | Resultado obtenido |
+|---|---|---|---|---|---|
+| CP-N01 | Email inválido sin '@' | Cualquier estado | POST /clientes con email='noesuncorreo' | Flash de error indicando formato inválido | PASS |
+| CP-N02 | Reserva con fecha pasada | Cliente y técnico registrados | POST /reservas/nueva con fecha_hora='2000-01-01T10:00' | Flash de error indicando que la fecha debe ser futura | PASS |
+| CP-N03 | Solapamiento mismo técnico/hora | Técnico id=1 con reserva a las 2099-05-05 15:00 | POST /reservas/nueva con mismo técnico y misma hora | Flash "el técnico ya tiene una reserva en esa fecha y hora" | PASS |
+
+#### 5.5.4 Casos disruptivos
+
+| ID | Nombre | Precondición | Pasos | Resultado esperado | Resultado obtenido |
+|---|---|---|---|---|---|
+| CP-D01 | Doble cancelación de una reserva | Reserva ya en estado cancelada | GET /reservas/{id}/cancelar sobre reserva cancelada | Flash "La reserva ya fue cancelada", sin corrupción en BD | PASS |
+| CP-D02 | Acceder a ID de reserva inexistente | No existe reserva con id=99999 | GET /reservas/99999/cancelar | Flash "Reserva no encontrada", redirect a index sin crash | PASS |
+
+### 5.6 Evidencias de ejecución
+
+```
+=================================================================
+  SUITE DE PRUEBAS - SISTEMA DE RESERVAS DE ATENCION TECNICA
+=================================================================
+
+  [Funcionales]
+  [+] CP-F01 - Registrar cliente con datos validos
+  [+] CP-F02 - Registrar tecnico con datos validos
+  [+] CP-F03 - Crear reserva con datos validos y fecha futura
+  [+] CP-F04 - Reservas futuras listadas ordenadas ASC por fecha
+  [+] CP-F05 - Cancelar reserva con motivo guarda estado y motivo en BD
+  [+] CP-F06 - Cancelar sin motivo deja motivo_cancelacion NULL en BD
+  [+] CP-F07 - Reserva cancelada no aparece en listado de futuras
+  [+] CP-F08 - Dos tecnicos distintos pueden tener reserva en la misma hora
+
+  [Borde]
+  [+] CP-B01 - Email con '+' es aceptado como valido
+  [+] CP-B02 - Nombre con caracteres especiales (tildes, enie) es aceptado
+  [+] CP-B03 - Telefono con formato internacional '+56 9 1234 5678' es aceptado
+  [+] CP-B04 - Descripcion de 500 caracteres es aceptada sin error
+  [+] CP-B05 - Tecnico puede ocupar hora de una reserva previamente cancelada
+
+  [Negativos]
+  [+] CP-N01 - Email sin '@' es rechazado con mensaje de error
+  [+] CP-N02 - Reserva con fecha en el pasado es rechazada
+  [+] CP-N03 - Solapamiento de horario para el mismo tecnico es rechazado
+
+  [Disruptivos]
+  [+] CP-D01 - Cancelar una reserva ya cancelada muestra error sin corromper BD
+  [+] CP-D02 - Acceder a reserva con ID inexistente retorna error controlado
+
+=================================================================
+  RESUMEN
+=================================================================
+  Funcional     8/8 pasados
+  Borde         5/5 pasados
+  Negativo      3/3 pasados
+  Disruptivo    2/2 pasados
+-----------------------------------------------------------------
+  TOTAL        18/18 pasados
+=================================================================
+```
+
+### 5.7 Pruebas de detección de bugs
+
+Tras ejecutar la suite principal, se diseñó una segunda ronda de pruebas orientada específicamente a encontrar fallos en la implementación, atacando supuestos no validados en el código. El script se encuentra en `tests/test_bugs.py`.
+
+Se ejecutaron 12 casos adicionales y se detectaron **7 bugs reales**.
+
+#### Evidencia de ejecución
+
+```
+=================================================================
+  TESTS DE DETECCION DE BUGS — SISTEMA DE RESERVAS
+=================================================================
+
+  [Validacion de campos]
+  [X] CP-V01 - Telefono con solo guiones es rechazado
+  [+] CP-V02 - Telefono con solo espacios es rechazado
+  [+] CP-V03 - Telefono de 6 digitos (bajo minimo) es rechazado
+  [+] CP-V04 - Telefono con letras es rechazado
+
+  [Validacion de fecha]
+  [X] CP-F01 - Fecha con formato invalido 'not-a-date' es rechazada
+  [X] CP-F02 - Fecha sin hora '2099-01-01' es rechazada
+  [X] CP-F03 - Cadena 'zzz-zzz' no se acepta como fecha
+
+  [Integridad referencial]
+  [X] CP-R01 - Reserva con cliente_id inexistente muestra error controlado (no crash)
+  [X] CP-R02 - Reserva con tecnico_id inexistente muestra error controlado (no crash)
+  [X] CP-R03 - cliente_id no numerico ('abc') no produce crash
+
+  [Duplicados]
+  [+] CP-D01 - Email duplicado en mayusculas es detectado como duplicado
+
+  [Comportamiento limite]
+  [+] CP-L01 - Multiples errores simultaneos se muestran todos
+
+=================================================================
+  RESUMEN
+=================================================================
+  TOTAL  5/12 pasados  |  7 BUGS encontrados
+=================================================================
+```
+
+#### Catálogo de bugs encontrados
+
+| ID | Descripción | Causa raíz | Severidad |
+|---|---|---|---|
+| BUG-01 (CP-V01) | Teléfono `"-------"` es aceptado como válido | Regex `^\+?[\d\s\-]{7,15}$` no exige al menos un dígito | Media |
+| BUG-02 (CP-F01) | Cadena `"not-a-date"` pasa la validación de fecha futura | La validación compara strings lexicográficamente: `"n" > "2"` → pasa | Alta |
+| BUG-03 (CP-F02) | Fecha sin hora `"2099-01-01"` es aceptada y almacenada | Misma causa que BUG-02; además rompe la detección de solapamientos | Alta |
+| BUG-04 (CP-F03) | Cualquier string mayor que `"2026..."` en ASCII pasa como fecha futura | Misma causa raíz que BUG-02 y BUG-03 | Alta |
+| BUG-05 (CP-R01) | `cliente_id=9999` (inexistente) provoca crash en lugar de error controlado | `IntegrityError` de clave foránea no capturado en la ruta `/reservas/nueva` | Alta |
+| BUG-06 (CP-R02) | `tecnico_id=9999` (inexistente) provoca crash y deja la BD bloqueada | Mismo origen que BUG-05; además `OperationalError: database is locked` en tests subsiguientes | Alta |
+| BUG-07 (CP-R03) | `cliente_id="abc"` (no numérico) provoca crash | Sin validación de tipo entero antes del `INSERT`; la excepción no es capturada | Alta |
+
+#### Análisis de causa raíz común
+
+Los bugs BUG-02, BUG-03 y BUG-04 comparten la misma causa: la validación de fecha futura se implementó como comparación de strings (`fecha_hora <= now_str()`). Esto funciona correctamente solo cuando el input tiene formato ISO `YYYY-MM-DDTHH:MM`; cualquier otro string que sea lexicográficamente mayor que la fecha actual pasa la validación sin error.
+
+Los bugs BUG-05, BUG-06 y BUG-07 comparten también una causa común: la ruta de creación de reservas no valida que `cliente_id` y `tecnico_id` sean enteros existentes en la BD antes de ejecutar el `INSERT`. La restricción de clave foránea de SQLite lanza una excepción que la aplicación no captura, resultando en un crash no controlado.
+
+#### Estado actual
+
+Los bugs están documentados y **pendientes de corrección** como parte de la próxima iteración del sistema. Su detección mediante pruebas automatizadas demuestra el valor de diseñar casos que ataquen los supuestos implícitos de la implementación, no solo el flujo feliz.
