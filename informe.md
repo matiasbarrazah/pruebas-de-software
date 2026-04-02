@@ -391,3 +391,47 @@ Los bugs BUG-05, BUG-06 y BUG-07 comparten también una causa común: la ruta de
 #### Estado actual
 
 Los bugs están documentados y **pendientes de corrección** como parte de la próxima iteración del sistema. Su detección mediante pruebas automatizadas demuestra el valor de diseñar casos que ataquen los supuestos implícitos de la implementación, no solo el flujo feliz.
+
+## 6. Uso de IA en el proyecto
+
+### 6.1 Herramientas utilizadas
+
+- Asistente de IA conversacional integrado al entorno de desarrollo.
+
+### 6.2 Para qué fueron usadas
+
+- Generación y mejora de borradores del análisis de requerimientos.
+- Redacción y ajuste de secciones del informe técnico.
+- Apoyo para estructurar casos de prueba y revisar coherencia entre reglas y pruebas.
+- Sugerencias de implementación y validación de consistencia general del proyecto.
+
+### 6.3 Decisiones no delegadas a IA y por qué
+
+- Definición final de supuestos del negocio (qué entra y qué queda fuera de alcance).
+- Selección final de reglas de negocio que se implementan en el sistema.
+- Criterio final sobre qué considerar bug real, su severidad y su priorización.
+- Aprobación final del contenido entregado en informe y repositorio.
+
+Estas decisiones no se delegaron completamente porque requieren contexto del curso, criterio técnico del equipo y responsabilidad directa sobre la entrega.
+
+### 6.4 Evaluación crítica del uso de IA
+
+En este proyecto se usó IA de manera intensiva para acelerar análisis, redacción y soporte técnico. Sin embargo, todo lo producido fue revisado por el equipo antes de aceptarlo.
+
+Consideramos que el uso de IA es necesario y útil en la mayoría de los casos para mejorar productividad, pero no reemplaza la responsabilidad profesional. La capacidad de validación del programador sigue siendo indispensable para detectar errores, cuestionar supuestos y asegurar que la solución realmente cumpla el problema planteado.
+
+## 7. Reflexión final
+
+El problema más importante detectado durante el desarrollo fue la validación incorrecta de fechas en la creación de reservas. La fecha futura se validaba comparando strings en vez de objetos de fecha/hora, lo que permitió entradas inválidas que debían rechazarse.
+
+Este problema fue detectado al ejecutar pruebas negativas y disruptivas diseñadas para romper supuestos del sistema (`tests/test_bugs.py`). No se detectó antes porque inicialmente se priorizó el flujo feliz y casos funcionales, sin atacar de forma temprana entradas mal formadas ni errores de integridad referencial.
+
+Como mejora de proceso, el equipo incorporará desde el inicio pruebas negativas y de borde junto con los casos funcionales, y además revisión de validaciones críticas antes de cerrar cada iteración.
+
+La principal limitación actual del sistema es que aún existen bugs de validación e integridad pendientes de corrección, por lo que no está listo para un despliegue productivo sin una iteración adicional de hardening.
+
+La mejora futura prioritaria es robustecer la capa de validación y manejo de errores en reservas (parseo estricto de fecha/hora, validación de IDs y captura controlada de excepciones de base de datos), seguida de una nueva ejecución completa de la suite de pruebas.
+
+## Conclusiones
+
+El proyecto permitió transformar un requerimiento ambiguo en una propuesta concreta, implementable y testeable, mostrando trazabilidad entre decisiones, reglas de negocio, implementación y pruebas. La distinción entre verificación y validación fue aplicada en forma práctica, y la estrategia de pruebas permitió detectar fallos relevantes que no aparecen en escenarios ideales. En síntesis, el resultado evidencia avance técnico y pensamiento crítico, junto con una hoja de ruta clara para estabilizar la solución en la siguiente iteración.
