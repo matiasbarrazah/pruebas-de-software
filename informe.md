@@ -1,5 +1,13 @@
 # Informe del Proyecto: Sistema de Reservas de Atención Técnica
 
+## Introducción
+
+Este proyecto consiste en el diseño, implementación y prueba de una aplicación web para gestionar reservas de atención técnica de electrodomésticos. El punto de partida fue un requerimiento intencionalmente incompleto, lo que obligó al equipo a identificar ambigüedades, tomar decisiones justificadas y reflejarlas tanto en el código como en las pruebas.
+
+El informe documenta todo el proceso: análisis del requerimiento, decisiones de diseño, implementación, estrategia de pruebas, bugs encontrados y una reflexión crítica sobre el uso de IA.
+
+---
+
 ## 1. Análisis inicial del requerimiento
 
 ### 1.1 Ambigüedades, vacíos y posibles conflictos detectados
@@ -195,6 +203,43 @@ La solución corresponde a una primera versión operativa para uso administrativ
 
 **Impacto en pruebas:** No hay casos de login/logout; las pruebas asumen acceso directo a funcionalidades.
 
+## 4. Diseño e implementación general
+
+La aplicación fue construida con **Python 3 + Flask** como framework web y **SQLite** como base de datos, accedida directamente con el módulo `sqlite3` de la librería estándar (sin ORM). La base de datos se crea automáticamente al iniciar la aplicación.
+
+### Estructura del proyecto
+
+```
+app/
+  app.py          # Lógica principal y rutas Flask
+  database.py     # Inicialización y conexión a SQLite
+  templates/      # Vistas HTML (Jinja2)
+  static/         # CSS
+tests/
+  test_suite.py   # Suite principal (18 casos)
+  test_bugs.py    # Suite de detección de bugs (14 casos)
+```
+
+### Esquema de base de datos
+
+- **clientes** — id, nombre, teléfono, email (único)
+- **técnicos** — id, nombre, especialidad
+- **reservas** — id, cliente_id (FK), tecnico_id (FK), fecha_hora, dirección, descripción, estado, motivo_cancelacion
+
+Las claves foráneas están habilitadas con `PRAGMA foreign_keys = ON`. El estado de una reserva puede ser `pendiente` o `cancelada`.
+
+### Rutas principales
+
+| Método | Ruta | Función |
+|---|---|---|
+| GET/POST | `/clientes` | Registro de clientes |
+| GET/POST | `/tecnicos` | Registro de técnicos |
+| GET/POST | `/reservas/nueva` | Crear reserva |
+| GET/POST | `/reservas/<id>/cancelar` | Cancelar reserva |
+| GET | `/` | Listado de reservas futuras |
+
+---
+
 ## 5. Estrategia, diseño y ejecución de pruebas
 
 ### 5.1 Objetivos de prueba
@@ -332,7 +377,7 @@ python -X utf8 tests/test_suite.py
 
 Tras ejecutar la suite principal, se diseñó una segunda ronda de pruebas orientada específicamente a encontrar fallos en la implementación, atacando supuestos no validados en el código. El script se encuentra en `tests/test_bugs.py`.
 
-Se ejecutaron 12 casos adicionales y se detectaron **7 bugs reales**.
+Se ejecutaron 14 casos adicionales y se detectaron **7 bugs reales**.
 
 #### Evidencia de ejecución
 
@@ -359,14 +404,16 @@ Se ejecutaron 12 casos adicionales y se detectaron **7 bugs reales**.
 
   [Duplicados]
   [+] CP-D01 - Email duplicado en mayusculas es detectado como duplicado
+  [+] CP-D02 - Se permiten dos tecnicos con el mismo nombre (distinta especialidad)
 
   [Comportamiento limite]
   [+] CP-L01 - Multiples errores simultaneos se muestran todos
+  [+] CP-L02 - Reserva con fecha pasada puede cancelarse
 
 =================================================================
   RESUMEN
 =================================================================
-  TOTAL  5/12 pasados  |  7 BUGS encontrados
+  TOTAL  7/14 pasados  |  7 BUGS encontrados
 =================================================================
 ```
 
@@ -431,6 +478,27 @@ Como mejora de proceso, el equipo incorporará desde el inicio pruebas negativas
 La principal limitación actual del sistema es que aún existen bugs de validación e integridad pendientes de corrección, por lo que no está listo para un despliegue productivo sin una iteración adicional de hardening.
 
 La mejora futura prioritaria es robustecer la capa de validación y manejo de errores en reservas (parseo estricto de fecha/hora, validación de IDs y captura controlada de excepciones de base de datos), seguida de una nueva ejecución completa de la suite de pruebas.
+
+## 8. Trabajo en equipo y repositorio
+
+### 8.1 Repositorio
+
+El proyecto se aloja en GitHub: [matiasbarrazah/pruebas-de-software](https://github.com/matiasbarrazah/pruebas-de-software)
+
+### 8.2 Estrategia de ramas
+
+El equipo decidió trabajar directamente sobre la rama `main`, sin ramas de feature ni flujo gitflow. La razón principal es que cada integrante trabajaba en días distintos y en partes del proyecto que no se solapaban, por lo que crear ramas habría añadido complejidad sin un beneficio real. Al no haber trabajo paralelo simultáneo sobre el mismo archivo, el riesgo de conflictos era bajo y el flujo directo sobre `main` resultó más ágil para la escala del proyecto.
+
+### 8.3 Coordinación del equipo
+
+La coordinación se realizó de forma directa entre los dos integrantes. La división del trabajo fue la siguiente:
+
+- **Matias Barraza:** análisis del requerimiento, decisiones de diseño, implementación de la aplicación y ejecución de la suite de pruebas principal (`test_suite.py`).
+- **Jose Meza:** redacción de secciones del informe, diseño y ejecución de la suite de detección de bugs (`test_bugs.py`) y llenado de la planilla de pruebas.
+
+Al trabajar en días distintos y sobre partes diferenciadas del proyecto, no se requirió una herramienta formal de seguimiento. Los avances se comunicaron directamente y se consolidaron en el repositorio compartido.
+
+---
 
 ## Conclusiones
 
